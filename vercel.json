@@ -1,31 +1,15 @@
 {
-  "version": 2,
+  "version":2,
   "builds": [
-    { 
-      "src": "index.js",
-      "use": "@vercel/node"
-    }
+    { "src": "*.js", "use": "@vercel/node" }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
-        "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
-      },
-      "dest": "index.js"
+      {
+        "src": "/(.*)",
+          "headers": {
+      "Access-Control-Allow-Origin": "*"
     },
-    {
-      "src": "/(.*)",
-      "headers": {
-        "Access-Control-Allow-Origin": "*"
-      },
-      "dest": "index.js"
-    }
-  ],
-  "env": {
-    "MONGODB_URI": "mongodb+srv://Madan:Madan%400968@cluster0.nykbb.mongodb.net/skillswap?retryWrites=true&w=majority",
-    "JWT_SECRET": "skillswap_secret_key_123456"
-  }
+        "dest": "/"
+      }
+  ]
 }
