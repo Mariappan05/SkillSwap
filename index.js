@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
-//SkillSwap
+
 // Database Connection
 const connectDB = require('./config/db');
 connectDB();
@@ -15,28 +15,27 @@ const userRoutes = require('./routes/user.routes');
 const skillRoutes = require('./routes/skill.routes');
 const sessionRoutes = require('./routes/session.routes');
 const reviewRoutes = require('./routes/review.routes');
-const messageRoutes = require('./routes/messageRoutes'); // Make sure this matches your file name
+const messageRoutes = require('./routes/messageRoutes');
 const videoCallRoutes = require('./routes/videoCallRoutes');
 const profileRoutes = require('./routes/profile.routes');
 
+// Initialize Express and HTTP server
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
 // Middleware
 app.use(cors());
-
-// Add error handling for JSON parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Add request logging
+// Request logging middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
     next();
 });
 
-// Routes
+// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/skills', skillRoutes);
@@ -87,6 +86,7 @@ app.use((err, req, res, next) => {
     });
 });
 
+// Server Initialization
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
