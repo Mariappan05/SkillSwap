@@ -1,15 +1,30 @@
 {
-  "version":2,
-  "builds": [
-    { "src": "*.js", "use": "@vercel/node" }
-  ],
-  "routes": [
-      {
-        "src": "/(.*)",
-          "headers": {
-      "Access-Control-Allow-Origin": "*"
+  "version": 2,
+  "functions": {
+    "api/*.js": {
+      "maxDuration": 60
     },
-        "dest": "/"
-      }
+    "pages/api/*.js": {
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "X-Requested-With, Content-Type, Accept"
+        }
+      ]
+    }
   ]
 }
