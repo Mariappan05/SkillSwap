@@ -94,10 +94,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-// IMPORTANT: Do NOT include server.listen() in the main file for Vercel deployment
-// Only export the app
+// IMPORTANT: For Vercel deployment, we don't call server.listen()
+// Instead, we just export the app
 
-// For local development only
+// For local development only - this won't run on Vercel
 if (process.env.NODE_ENV === 'development') {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
