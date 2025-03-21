@@ -55,7 +55,7 @@ const connectDB = async () => {
 
 // Import Routes
 // Comment these out if the route files don't exist yet
-/*
+
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const skillRoutes = require('./routes/skill.routes');
@@ -64,7 +64,6 @@ const reviewRoutes = require('./routes/review.routes');
 const messageRoutes = require('./routes/messageRoutes');
 const videoCallRoutes = require('./routes/videoCallRoutes');
 const profileRoutes = require('./routes/profile.routes');
-*/
 
 // Placeholder routes for testing if actual route files don't exist yet
 app.get('/api/auth/test', (req, res) => res.json({ message: 'Auth route working' }));
@@ -90,9 +89,7 @@ app.use(async (req, res, next) => {
   }
 });
 
-// API Routes
-// Comment these out if the route files don't exist yet
-/*
+// API Route
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/skills', skillRoutes);
@@ -101,7 +98,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/video-calls', videoCallRoutes);
 app.use('/api/profile', profileRoutes);
-*/
+
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
