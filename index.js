@@ -3,9 +3,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('express-async-errors');
+const http = require('http');
 
 // Initialize Express
 const app = express();
+const server = http.createServer(app);
 
 // Middleware
 app.use(cors());
@@ -32,7 +34,7 @@ const connectDB = async () => {
   if (cachedDb) {
     return cachedDb;
   }
-  
+ 
   try {
     const connection = await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
@@ -41,7 +43,7 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
     });
-    
+   
     cachedDb = connection;
     console.log('MongoDB connected successfully');
     return connection;
@@ -52,6 +54,8 @@ const connectDB = async () => {
 };
 
 // Import Routes
+// Comment these out if the route files don't exist yet
+/*
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const skillRoutes = require('./routes/skill.routes');
@@ -60,11 +64,22 @@ const reviewRoutes = require('./routes/review.routes');
 const messageRoutes = require('./routes/messageRoutes');
 const videoCallRoutes = require('./routes/videoCallRoutes');
 const profileRoutes = require('./routes/profile.routes');
+*/
+
+// Placeholder routes for testing if actual route files don't exist yet
+app.get('/api/auth/test', (req, res) => res.json({ message: 'Auth route working' }));
+app.get('/api/users/test', (req, res) => res.json({ message: 'Users route working' }));
+app.get('/api/skills/test', (req, res) => res.json({ message: 'Skills route working' }));
 
 // Connect to DB before handling routes
 app.use(async (req, res, next) => {
   try {
-    await connectDB();
+    // For initial deployment, let's make this optional
+    if (process.env.MONGODB_URI) {
+      await connectDB();
+    } else {
+      console.log('No MongoDB URI provided, skipping database connection');
+    }
     next();
   } catch (error) {
     console.error('Database connection error:', error);
@@ -76,6 +91,8 @@ app.use(async (req, res, next) => {
 });
 
 // API Routes
+// Comment these out if the route files don't exist yet
+/*
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/skills', skillRoutes);
@@ -84,6 +101,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/video-calls', videoCallRoutes);
 app.use('/api/profile', profileRoutes);
+*/
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
@@ -94,19 +112,50 @@ app.use((err, req, res, next) => {
   });
 });
 
-// IMPORTANT: For Vercel deployment, we don't call server.listen()
-// Instead, we just export the app
-
-// For local development only - this won't run on Vercel
-if (process.env.NODE_ENV === 'development') {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on port ${PORT}`);
-    console.log(`http://localhost:${PORT}`);
-    // Connect to database after server is running
-    connectDB();
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `The requested resource at ${req.path} was not found`
   });
-}
+});
 
-// Export the Express app
+// IMPORTANT: For Render deployment, we MUST call server.listen()
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`http://localhost:${PORT}`);
+  
+  // Connect to database after server is running if URI is provided
+  if (process.env.MONGODB_URI) {
+    connectDB().catch(err => console.error('Failed to connect to MongoDB:', err));
+  } else {
+    console.log('No MongoDB URI provided, skipping database connection');
+  }
+});
+
+// Handle graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    mongoose.connection.close(false, () => {
+      console.log('MongoDB connection closed');
+      process.exit(0);
+    });
+  });
+});
+
+// Export the Express app for potential serverless functions
 module.exports = app;
