@@ -99,9 +99,10 @@ app.use((err, req, res, next) => {
 
 // For local development only - this won't run on Vercel
 if (process.env.NODE_ENV === 'development') {
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`http://localhost:${PORT}`);
     // Connect to database after server is running
     connectDB();
   });
