@@ -8,6 +8,13 @@ const profileController = {
             // Find user and include password for verification
             const user = await User.findById(req.user._id).select('+password');
             
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found'
+                });
+            }
+
             // Debug logging
             console.log('Updating profile for user:', user._id);
 
@@ -25,14 +32,17 @@ const profileController = {
                     });
                 }
 
-                // Hash and set new password
+                // Hash new password
                 const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(req.body.newPassword, salt);
+                req.body.password = await bcrypt.hash(req.body.newPassword, salt);
             }
+
+            // Prepare update object
+            const updateObj = {};
 
             // Update professor details
             if (req.body.professorDetails) {
-                user.professorDetails = {
+                updateObj.professorDetails = {
                     experience: req.body.professorDetails.experience,
                     currentRole: req.body.professorDetails.currentRole,
                     institutionName: req.body.professorDetails.institutionName,
@@ -43,7 +53,7 @@ const profileController = {
 
             // Update skills array
             if (req.body.skills && Array.isArray(req.body.skills)) {
-                user.skills = req.body.skills.map(skill => ({
+                updateObj.skills = req.body.skills.map(skill => ({
                     name: skill.name,
                     proficiency: skill.proficiency,
                     yearsOfExperience: skill.yearsOfExperience
@@ -51,12 +61,12 @@ const profileController = {
             }
 
             // Update basic profile information
-            user.role = req.body.role || user.role;
-            user.age = req.body.age || user.age;
+            if (req.body.role) updateObj.role = req.body.role;
+            if (req.body.age) updateObj.age = req.body.age;
             
             // Update contact information
             if (req.body.contact) {
-                user.contact = {
+                updateObj.contact = {
                     phone: req.body.contact.phone,
                     alternateEmail: req.body.contact.alternateEmail
                 };
@@ -64,7 +74,7 @@ const profileController = {
 
             // Update address
             if (req.body.address) {
-                user.address = {
+                updateObj.address = {
                     street: req.body.address.street,
                     city: req.body.address.city,
                     state: req.body.address.state,
@@ -73,16 +83,18 @@ const profileController = {
                 };
             }
 
-            user.profileCompleted = true;
-            await user.save();
+            updateObj.profileCompleted = true;
 
-            // Remove password from response
-            const userResponse = user.toObject();
-            delete userResponse.password;
+            // Use findOneAndUpdate instead of save
+            const updatedUser = await User.findByIdAndUpdate(
+                req.user._id,
+                { $set: updateObj },
+                { new: true, runValidators: false }
+            ).select('-password');
 
             res.json({
                 success: true,
-                data: userResponse,
+                data: updatedUser,
                 message: 'Profile updated successfully'
             });
 
