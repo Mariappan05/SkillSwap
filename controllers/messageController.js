@@ -5,7 +5,7 @@ const messageController = {
     getUserConversations: async (req, res) => {
         try {
             const conversations = await Conversation.find({
-                participants: { $in: [req.user.userId] }
+                participants: { $in: [req.user._id] }
             })
             .populate('participants', 'fullName email')
             .populate('lastMessage');
@@ -48,7 +48,7 @@ const messageController = {
             
             const message = await Message.create({
                 conversation: conversationId,
-                sender: req.user.userId,
+                sender: req.user._id,
                 content
             });
 
@@ -75,6 +75,7 @@ const messageController = {
     createConversation: async (req, res) => {
         try {
             const { participantId } = req.body;
+            const currentUserId = req.user._id;
             
             // Validate participantId
             if (!participantId) {
@@ -85,7 +86,7 @@ const messageController = {
             }
 
             // Validate that participantId is not the same as current user
-            if (participantId === req.user.userId) {
+            if (participantId === currentUserId) {
                 return res.status(400).json({
                     success: false,
                     message: 'Cannot create conversation with yourself'
@@ -95,7 +96,7 @@ const messageController = {
             // Check if conversation already exists
             const existingConversation = await Conversation.findOne({
                 participants: { 
-                    $all: [req.user.userId, participantId],
+                    $all: [currentUserId, participantId],
                     $size: 2
                 }
             });
@@ -109,7 +110,7 @@ const messageController = {
 
             // Create new conversation
             const conversation = await Conversation.create({
-                participants: [req.user.userId, participantId]
+                participants: [currentUserId, participantId]
             });
 
             const populatedConversation = await Conversation.findById(conversation._id)
