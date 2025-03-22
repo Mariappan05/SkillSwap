@@ -76,6 +76,22 @@ const messageController = {
         try {
             const { participantId } = req.body;
             
+            // Validate participantId
+            if (!participantId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Participant ID is required'
+                });
+            }
+
+            // Validate that participantId is not the same as current user
+            if (participantId === req.user.userId) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cannot create conversation with yourself'
+                });
+            }
+
             // Check if conversation already exists
             const existingConversation = await Conversation.findOne({
                 participants: { 
@@ -104,9 +120,11 @@ const messageController = {
                 data: populatedConversation
             });
         } catch (error) {
+            console.error('Create conversation error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Error creating conversation'
+                message: 'Error creating conversation',
+                error: error.message
             });
         }
     }
