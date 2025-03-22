@@ -2,61 +2,68 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    fullName: {
+    name: {
         type: String,
-        required: [true, 'Full name is required']
+        required: [true, 'Please add a name'],
+        trim: true
     },
     email: {
-        type: String,
-        required: [true, 'Email is required'],
+        type: String,   
+        required: [true, 'Please add an email'],
         unique: true,
-        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please add a valid email']
+        match: [
+            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+            'Please add a valid email'
+        ]
     },
     password: {
         type: String,
-        required: [true, 'Password is required'],
+        required: [true, 'Please add a password'],
         minlength: 6,
-        select: false  // Password will not be returned in queries
+        select: false
     },
     role: {
         type: String,
-        enum: ['student', 'professor', 'admin'],
-        default: null
+        enum: ['student', 'professor'],
+        required: [true, 'Please specify user role']
     },
-    skills: {
-        type: [{
-            name: {
-                type: String,
-                required: true
-            },
-            proficiency: {
-                type: String,
-                enum: ['beginner', 'intermediate', 'advanced', 'expert'],
-                required: function() { return this.parent().role === 'professor'; }
-            },
-            yearsOfExperience: {
-                type: Number,
-                required: function() { return this.parent().role === 'professor'; }
-            }
-        }],
-        default: []
+    age: {
+        type: Number,
+        min: 18
     },
-    // Student specific fields
-    studentDetails: {
-        collegeName: String,
-        degree: String,
-        department: String,
-        year: Number,
-        passoutYear: Number,
-        collegeLocation: String
+    profileCompleted: {
+        type: Boolean,
+        default: false
     },
-    // Professor specific fields
     professorDetails: {
-        experience: Number,
+        experience: String,
         currentRole: String,
         institutionName: String,
         institutionLocation: String,
         idProof: String
+    },
+    skills: [{
+        name: {
+            type: String,
+            required: true
+        },
+        proficiency: {
+            type: String,
+            enum: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
+            required: function() {
+                return this.role === 'professor';
+            }
+        },
+        yearsOfExperience: {
+            type: Number,
+            required: function() {
+                return this.role === 'professor';
+            }
+        }
+    }],
+    contact: {
+        phone: String,
+        alternateEmail: String
     },
     address: {
         street: String,
@@ -65,37 +72,22 @@ const userSchema = new mongoose.Schema({
         zipCode: String,
         country: String
     },
-    contact: {
-        phone: String,
-        alternateEmail: String
-    },
-    profileCompleted: {
-        type: Boolean,
-        default: false
-    },
     createdAt: {
         type: Date,
         default: Date.now
     }
 });
 
-// Password hashing middleware
+// Hash password before saving
 userSchema.pre('save', async function(next) {
-    // Only hash password if it's modified
     if (!this.isModified('password')) {
-        return next();
-    }
-
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
         next();
-    } catch (error) {
-        next(error);
     }
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
 });
 
-// Password comparison method
+// Match user entered password to hashed password in database
 userSchema.methods.matchPassword = async function(enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
