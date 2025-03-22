@@ -70,6 +70,45 @@ const messageController = {
                 message: 'Error sending message'
             });
         }
+    },
+
+    createConversation: async (req, res) => {
+        try {
+            const { participantId } = req.body;
+            
+            // Check if conversation already exists
+            const existingConversation = await Conversation.findOne({
+                participants: { 
+                    $all: [req.user.userId, participantId],
+                    $size: 2
+                }
+            });
+
+            if (existingConversation) {
+                return res.status(200).json({
+                    success: true,
+                    data: existingConversation
+                });
+            }
+
+            // Create new conversation
+            const conversation = await Conversation.create({
+                participants: [req.user.userId, participantId]
+            });
+
+            const populatedConversation = await Conversation.findById(conversation._id)
+                .populate('participants', 'fullName email');
+
+            res.status(201).json({
+                success: true,
+                data: populatedConversation
+            });
+        } catch (error) {
+            res.status(500).json({
+                success: false,
+                message: 'Error creating conversation'
+            });
+        }
     }
 };
 

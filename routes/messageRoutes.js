@@ -9,6 +9,7 @@ router.get('/', (req, res) => {
 });
 
 // Protected routes
+router.post('/conversation', protect, messageController.createConversation);
 router.get('/conversations', protect, messageController.getUserConversations);
 router.get('/conversation/:conversationId', protect, messageController.getConversation);
 router.post('/send', protect, messageController.sendMessage);
