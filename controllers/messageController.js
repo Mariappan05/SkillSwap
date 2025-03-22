@@ -8,16 +8,25 @@ const messageController = {
                 participants: { $in: [req.user._id] }
             })
             .populate('participants', 'fullName email')
-            .populate('lastMessage');
+            .populate('lastMessage')
+            .sort({ createdAt: -1 }); // Sort by newest first
             
+            // Filter out conversations where the same user is both participants
+            const validConversations = conversations.filter(conv => {
+                const uniqueParticipants = new Set(conv.participants.map(p => p._id.toString()));
+                return uniqueParticipants.size === 2;
+            });
+
             res.status(200).json({
                 success: true,
-                data: conversations
+                data: validConversations
             });
         } catch (error) {
+            console.error('Get conversations error:', error);
             res.status(500).json({
                 success: false,
-                message: 'Error fetching conversations'
+                message: 'Error fetching conversations',
+                error: error.message
             });
         }
     },
@@ -86,7 +95,7 @@ const messageController = {
             }
 
             // Validate that participantId is not the same as current user
-            if (participantId === currentUserId) {
+            if (participantId === currentUserId.toString()) {
                 return res.status(400).json({
                     success: false,
                     message: 'Cannot create conversation with yourself'
