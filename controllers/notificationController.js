@@ -1,23 +1,33 @@
 const admin = require('firebase-admin');
 const User = require('../models/User');
-const { initializeFirebase } = require('../config/firebaseConfig');
 
 // Initialize Firebase Admin
-initializeFirebase();
+const serviceAccount = require('../config/serviceAccountKey.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 
 const notificationController = {
+    // Update FCM token
     updateFCMToken: async (req, res) => {
         try {
-            const userId = req.user.userId;
             const { fcmToken } = req.body;
+            const userId = req.user.id;
 
-            // Allow empty FCM token to clear the token
-            const updateData = fcmToken ? { fcmToken } : { $unset: { fcmToken: 1 } };
+            console.log('Updating FCM token for user:', userId);
+            console.log('New FCM token:', fcmToken);
 
-            // Update user's FCM token in database
+            if (!fcmToken) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'FCM token is required'
+                });
+            }
+
+            // Update user's FCM token
             const updatedUser = await User.findByIdAndUpdate(
-                userId,
-                updateData,
+                userId, 
+                { fcmToken },
                 { new: true }
             );
 
@@ -28,57 +38,82 @@ const notificationController = {
                 });
             }
 
-            res.status(200).json({
+            console.log('FCM token updated successfully for user:', userId);
+            res.json({
                 success: true,
-                message: fcmToken ? 'FCM Token updated successfully' : 'FCM Token cleared successfully',
+                message: 'FCM token updated successfully',
                 data: {
                     userId: updatedUser._id,
-                    fcmToken: updatedUser.fcmToken || null
+                    fcmToken: updatedUser.fcmToken
                 }
             });
         } catch (error) {
-            console.error('FCM Token update error:', error);
+            console.error('Error updating FCM token:', error);
             res.status(500).json({
                 success: false,
-                message: 'Token update failed',
-                error: error.message
+                message: 'Error updating FCM token'
             });
         }
     },
 
-    sendPushNotification: async (userId, title, body) => {
+    // Send test notification
+    testNotification: async (req, res) => {
         try {
+            const { userId, title, body } = req.body;
+
+            console.log('Attempting to send notification to user:', userId);
+            console.log('Notification details:', { title, body });
+
+            if (!userId || !title || !body) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'userId, title, and body are required'
+                });
+            }
+
+            // Get user's FCM token
             const user = await User.findById(userId);
-            
-            if (!user) {
-                throw new Error('User not found');
+            console.log('Found user:', user ? 'Yes' : 'No');
+            if (user) {
+                console.log('User FCM token:', user.fcmToken ? 'Present' : 'Missing');
             }
 
-            if (!user.fcmToken) {
-                console.log('No FCM token found for user:', userId);
-                return null; // Return null instead of throwing error for missing token
+            if (!user || !user.fcmToken) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'User not found or FCM token not set',
+                    details: {
+                        userExists: !!user,
+                        hasFcmToken: user ? !!user.fcmToken : false
+                    }
+                });
             }
 
+            // Send notification
             const message = {
-                notification: { 
-                    title, 
-                    body,
-                    clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+                notification: {
+                    title,
+                    body
                 },
-                token: user.fcmToken,
-                data: {
-                    userId: userId.toString(),
-                    type: 'message',
-                    timestamp: new Date().toISOString()
-                }
+                token: user.fcmToken
             };
 
+            console.log('Sending notification with message:', message);
             const response = await admin.messaging().send(message);
-            console.log('Successfully sent notification:', response);
-            return response;
+            console.log('Notification sent successfully:', response);
+
+            res.json({
+                success: true,
+                message: 'Notification sent successfully',
+                response
+            });
         } catch (error) {
-            console.error('Notification error:', error);
-            throw error;
+            console.error('Error sending notification:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error sending notification',
+                error: error.message
+            });
         }
     }
 };

@@ -68,6 +68,7 @@ const reviewRoutes = require('./routes/review.routes');
 const messageRoutes = require('./routes/messageRoutes');
 const videoCallRoutes = require('./routes/videoCallRoutes');
 const profileRoutes = require('./routes/profile.routes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Placeholder routes for testing if actual route files don't exist yet
 app.get('/api/auth/test', (req, res) => res.json({ message: 'Auth route working' }));
@@ -102,7 +103,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/video-calls', videoCallRoutes);
 app.use('/api/profile', profileRoutes);
-
+app.use('/api/notifications', notificationRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
