@@ -53,7 +53,7 @@
 <body>
     <div class="container">
         <h1>FCM Token Test</h1>
-        <button onclick="getToken()">Get FCM Token</button>
+        <button id="getTokenBtn">Get FCM Token</button>
         <div id="status"></div>
         <div id="token"></div>
     </div>
@@ -61,29 +61,33 @@
     <script type="module">
         import { getFCMToken } from './js/fcm-token.js';
 
-        window.getToken = async function() {
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const getTokenBtn = document.getElementById('getTokenBtn');
             const statusDiv = document.getElementById('status');
             const tokenDiv = document.getElementById('token');
-            
-            try {
-                statusDiv.textContent = 'Requesting notification permission...';
-                statusDiv.className = '';
-                
-                const token = await getFCMToken();
-                
-                if (token) {
-                    statusDiv.textContent = 'Token generated successfully!';
-                    statusDiv.className = 'success';
-                    tokenDiv.textContent = token;
-                } else {
-                    statusDiv.textContent = 'Failed to get token';
+
+            getTokenBtn.addEventListener('click', async () => {
+                try {
+                    statusDiv.textContent = 'Requesting notification permission...';
+                    statusDiv.className = '';
+                    
+                    const token = await getFCMToken();
+                    
+                    if (token) {
+                        statusDiv.textContent = 'Token generated successfully!';
+                        statusDiv.className = 'success';
+                        tokenDiv.textContent = token;
+                    } else {
+                        statusDiv.textContent = 'Failed to get token';
+                        statusDiv.className = 'error';
+                    }
+                } catch (error) {
+                    statusDiv.textContent = `Error: ${error.message}`;
                     statusDiv.className = 'error';
                 }
-            } catch (error) {
-                statusDiv.textContent = `Error: ${error.message}`;
-                statusDiv.className = 'error';
-            }
-        };
+            });
+        });
     </script>
 </body>
 </html> 
