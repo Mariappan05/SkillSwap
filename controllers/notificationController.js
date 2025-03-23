@@ -11,17 +11,13 @@ const notificationController = {
             const userId = req.user.userId;
             const { fcmToken } = req.body;
 
-            if (!fcmToken) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'FCM Token is required'
-                });
-            }
+            // Allow empty FCM token to clear the token
+            const updateData = fcmToken ? { fcmToken } : { $unset: { fcmToken: 1 } };
 
             // Update user's FCM token in database
             const updatedUser = await User.findByIdAndUpdate(
                 userId,
-                { fcmToken },
+                updateData,
                 { new: true }
             );
 
@@ -34,10 +30,10 @@ const notificationController = {
 
             res.status(200).json({
                 success: true,
-                message: 'FCM Token updated successfully',
+                message: fcmToken ? 'FCM Token updated successfully' : 'FCM Token cleared successfully',
                 data: {
                     userId: updatedUser._id,
-                    fcmToken: updatedUser.fcmToken
+                    fcmToken: updatedUser.fcmToken || null
                 }
             });
         } catch (error) {
@@ -55,13 +51,12 @@ const notificationController = {
             const user = await User.findById(userId);
             
             if (!user) {
-                console.error('User not found for notification:', userId);
-                return;
+                throw new Error('User not found');
             }
 
             if (!user.fcmToken) {
-                console.error('No FCM token found for user:', userId);
-                return;
+                console.log('No FCM token found for user:', userId);
+                return null; // Return null instead of throwing error for missing token
             }
 
             const message = {
