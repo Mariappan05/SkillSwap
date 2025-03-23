@@ -1,7 +1,4 @@
-// Initialize Firebase
-import { initializeApp } from "firebase/app";
-import { getMessaging, getToken } from "firebase/messaging";
-
+// Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyDSDBgBpDXulA0CIzK72uk8EuvshJBoaew",
     authDomain: "skillswap-ad542.firebaseapp.com",
@@ -13,12 +10,46 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+let messaging = null;
+try {
+    firebase.initializeApp(firebaseConfig);
+    messaging = firebase.messaging();
+} catch (error) {
+    console.error('Firebase initialization error:', error);
+}
+
+// Register service worker
+async function registerServiceWorker() {
+    try {
+        if (!('serviceWorker' in navigator)) {
+            throw new Error('Service Worker not supported in this browser');
+        }
+
+        // Unregister any existing service workers
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+            await registration.unregister();
+        }
+
+        // Register service worker
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/'
+        });
+        
+        console.log('Service Worker registered with scope:', registration.scope);
+        return registration;
+    } catch (error) {
+        console.error('Service Worker registration failed:', error);
+        throw error;
+    }
+}
 
 // Function to get FCM token
 async function getFCMToken() {
     try {
+        // First register service worker
+        const registration = await registerServiceWorker();
+        
         // Request permission
         const permission = await Notification.requestPermission();
         if (permission !== 'granted') {
@@ -26,8 +57,9 @@ async function getFCMToken() {
         }
 
         // Get FCM token
-        const currentToken = await getToken(messaging, {
-            vapidKey: 'BB0dy30tDBvPNfhY8k4xfu45YoKBbUxShMlVQYnQfuWn5yyL1Qs6lfvR7LevPxHVl8mUFIzX2M6RIfcQ2le3Ihs'
+        const currentToken = await messaging.getToken({
+            vapidKey: 'BB0dy30tDBvPNfhY8k4xfu45YoKBbUxShMlVQYnQfuWn5yyL1Qs6lfvR7LevPxHVl8mUFIzX2M6RIfcQ2le3Ihs',
+            serviceWorkerRegistration: registration
         });
 
         if (currentToken) {
@@ -41,7 +73,7 @@ async function getFCMToken() {
         }
     } catch (error) {
         console.error('Error getting FCM token:', error);
-        return null;
+        throw error;
     }
 }
 
@@ -52,7 +84,7 @@ async function updateFCMToken(token) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('token')}` // Assuming you store JWT token in localStorage
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
             },
             body: JSON.stringify({ fcmToken: token })
         });
@@ -69,13 +101,15 @@ async function updateFCMToken(token) {
 }
 
 // Listen for token refresh
-messaging.onTokenRefresh(async () => {
-    console.log('Token refreshed');
-    const newToken = await getFCMToken();
-    if (newToken) {
-        await updateFCMToken(newToken);
-    }
-});
+if (messaging) {
+    messaging.onTokenRefresh(async () => {
+        console.log('Token refreshed');
+        const newToken = await getFCMToken();
+        if (newToken) {
+            await updateFCMToken(newToken);
+        }
+    });
+}
 
 // Export functions
-export { getFCMToken, updateFCMToken }; 
+window.getFCMToken = getFCMToken; 

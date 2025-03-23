@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FCM Token Test</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -48,6 +51,14 @@
             background: #f8d7da;
             color: #721c24;
         }
+        #debug {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -56,10 +67,18 @@
         <button id="getTokenBtn">Get FCM Token</button>
         <div id="status"></div>
         <div id="token"></div>
+        <div id="debug"></div>
     </div>
 
-    <script type="module">
-        import { getFCMToken } from './js/fcm-token.js';
+    <script src="/js/fcm-token.js"></script>
+    <script>
+        // Debug logging function
+        function logDebug(message) {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.innerHTML += `<p>${new Date().toISOString()}: ${message}</p>`;
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+            console.log(message);
+        }
 
         // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', () => {
@@ -71,20 +90,24 @@
                 try {
                     statusDiv.textContent = 'Requesting notification permission...';
                     statusDiv.className = '';
+                    logDebug('Starting token generation process...');
                     
-                    const token = await getFCMToken();
+                    const token = await window.getFCMToken();
                     
                     if (token) {
                         statusDiv.textContent = 'Token generated successfully!';
                         statusDiv.className = 'success';
                         tokenDiv.textContent = token;
+                        logDebug('Token generated successfully');
                     } else {
                         statusDiv.textContent = 'Failed to get token';
                         statusDiv.className = 'error';
+                        logDebug('Failed to get token');
                     }
                 } catch (error) {
                     statusDiv.textContent = `Error: ${error.message}`;
                     statusDiv.className = 'error';
+                    logDebug(`Error: ${error.message}`);
                 }
             });
         });
