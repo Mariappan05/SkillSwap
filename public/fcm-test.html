@@ -1,158 +1,89 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FCM Token Test</title>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #token {
+            word-break: break-all;
+            background: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        #status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
 </head>
 <body>
-    <h1>FCM Token Test</h1>
-    <button onclick="requestPermission()">Request Notification Permission</button>
-    <div id="token"></div>
-    <div id="debug"></div>
+    <div class="container">
+        <h1>FCM Token Test</h1>
+        <button onclick="getToken()">Get FCM Token</button>
+        <div id="status"></div>
+        <div id="token"></div>
+    </div>
 
-    <script>
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyDSDBgBpDXulA0CIzK72uk8EuvshJBoaew",
-            authDomain: "skillswap-ad542.firebaseapp.com",
-            projectId: "skillswap-ad542",
-            storageBucket: "skillswap-ad542.firebasestorage.app",
-            messagingSenderId: "198740209451",
-            appId: "1:198740209451:web:9ebf49c94f0a40bc479f6e",
-            measurementId: "G-FNHRHSB010"
-        };
+    <script type="module">
+        import { getFCMToken } from './js/fcm-token.js';
 
-        // Initialize Firebase
-        let messaging = null;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            messaging = firebase.messaging();
-        } catch (error) {
-            console.error('Firebase initialization error:', error);
-        }
-
-        // Debug logging function
-        function logDebug(message) {
-            const debugDiv = document.getElementById('debug');
-            debugDiv.innerHTML += `<p>${new Date().toISOString()}: ${message}</p>`;
-            debugDiv.scrollTop = debugDiv.scrollHeight;
-            console.log(message);
-        }
-
-        // Register service worker
-        async function registerServiceWorker() {
+        window.getToken = async function() {
+            const statusDiv = document.getElementById('status');
+            const tokenDiv = document.getElementById('token');
+            
             try {
-                if (!('serviceWorker' in navigator)) {
-                    throw new Error('Service Worker not supported in this browser');
-                }
-
-                // Unregister any existing service workers
-                const registrations = await navigator.serviceWorker.getRegistrations();
-                for (let registration of registrations) {
-                    await registration.unregister();
-                }
-
-                // Get the current origin (including port)
-                const origin = window.location.origin;
-                logDebug(`Current origin: ${origin}`);
-
-                // Register service worker with specific scope
-                const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-                    scope: '/'
-                });
+                statusDiv.textContent = 'Requesting notification permission...';
+                statusDiv.className = '';
                 
-                logDebug(`Service Worker registered with scope: ${registration.scope}`);
-                logDebug(`Service Worker active: ${registration.active}`);
-                logDebug(`Service Worker waiting: ${registration.waiting}`);
-                return registration;
-            } catch (error) {
-                logDebug(`Service Worker registration failed: ${error.message}`);
-                throw error;
-            }
-        }
-
-        async function requestPermission() {
-            try {
-                if (!messaging) {
-                    throw new Error('Firebase Messaging not initialized');
-                }
-
-                document.getElementById('token').innerHTML = 'Registering service worker...';
-                logDebug('Starting permission request process...');
+                const token = await getFCMToken();
                 
-                // First, register the service worker
-                const registration = await registerServiceWorker();
-                
-                document.getElementById('token').innerHTML = 'Requesting notification permission...';
-                logDebug('Requesting notification permission...');
-                
-                // Then request notification permission
-                const permission = await Notification.requestPermission();
-                logDebug(`Notification permission status: ${permission}`);
-                
-                if (permission === 'granted') {
-                    document.getElementById('token').innerHTML = 'Getting FCM token...';
-                    logDebug('Getting FCM token...');
-                    
-                    // Get FCM token with service worker registration
-                    const token = await messaging.getToken({
-                        vapidKey: "BB0dy30tDBvPNfhY8k4xfu45YoKBbUxShMlVQYnQfuWn5yyL1Qs6lfvR7LevPxHVl8mUFIzX2M6RIfcQ2le3Ihs",
-                        serviceWorkerRegistration: registration
-                    });
-                    
-                    if (token) {
-                        logDebug('FCM token received successfully');
-                        document.getElementById('token').innerHTML = `
-                            <h3>Your FCM Token:</h3>
-                            <textarea style="width: 100%; height: 100px;">${token}</textarea>
-                            <br><br>
-                            <h3>To use this token, send it to your backend using:</h3>
-                            <pre>
-POST /api/notifications/fcm-token
-Content-Type: application/json
-Authorization: Bearer YOUR_JWT_TOKEN
-
-{
-    "fcmToken": "${token}"
-}
-                            </pre>
-                        `;
-                    } else {
-                        throw new Error('No FCM token received');
-                    }
+                if (token) {
+                    statusDiv.textContent = 'Token generated successfully!';
+                    statusDiv.className = 'success';
+                    tokenDiv.textContent = token;
                 } else {
-                    document.getElementById('token').innerHTML = 'Notification permission denied';
-                    logDebug('Notification permission denied by user');
+                    statusDiv.textContent = 'Failed to get token';
+                    statusDiv.className = 'error';
                 }
             } catch (error) {
-                console.error('Error:', error);
-                logDebug(`Error occurred: ${error.message}`);
-                logDebug(`Error stack: ${error.stack}`);
-                document.getElementById('token').innerHTML = `
-                    <div style="color: red;">
-                        <h3>Error:</h3>
-                        <p>${error.message}</p>
-                        <p>Please make sure:</p>
-                        <ul>
-                            <li>You're using HTTPS or localhost</li>
-                            <li>Your browser supports service workers (Chrome or Firefox recommended)</li>
-                            <li>You've allowed notifications</li>
-                            <li>Your VAPID key is correct</li>
-                        </ul>
-                        <p>Debug info:</p>
-                        <pre>${JSON.stringify(error, null, 2)}</pre>
-                    </div>
-                `;
+                statusDiv.textContent = `Error: ${error.message}`;
+                statusDiv.className = 'error';
             }
-        }
-
-        // Handle foreground messages
-        if (messaging) {
-            messaging.onMessage((payload) => {
-                logDebug('Received foreground message: ' + JSON.stringify(payload));
-            });
-        }
+        };
     </script>
 </body>
 </html> 
