@@ -1,0 +1,20 @@
+# Firebase configuration and service account keys
+config/serviceAccountKey.json
+config/firebaseConfig.js
+*.json.backup
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+.DS_Store
+*.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo 

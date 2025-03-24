@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FCM Token Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #token {
+            word-break: break-all;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .debug {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>FCM Token Test</h1>
+        <button onclick="handleGetToken()">Get FCM Token</button>
+        <div id="token"></div>
+        <div id="status" class="status"></div>
+        <div id="debug" class="debug"></div>
+    </div>
+
+    <script src="/js/fcm-token.js"></script>
+    <script>
+        // Function to update status
+        function updateStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${isError ? 'error' : 'success'}`;
+        }
+
+        // Function to update debug info
+        function updateDebug(message) {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.textContent += message + '\n';
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+        }
+
+        // Override console.log to also update debug div
+        const originalConsoleLog = console.log;
+        console.log = function() {
+            originalConsoleLog.apply(console, arguments);
+            updateDebug(Array.from(arguments).join(' '));
+        };
+
+        // Override console.error to also update debug div
+        const originalConsoleError = console.error;
+        console.error = function() {
+            originalConsoleError.apply(console, arguments);
+            updateDebug('ERROR: ' + Array.from(arguments).join(' '));
+        };
+
+        // Function to handle token generation
+        async function handleGetToken() {
+            try {
+                updateStatus('Starting token generation process...');
+                console.log('Starting token generation process...');
+                
+                const token = await window.getFCMToken();
+                
+                if (token) {
+                    document.getElementById('token').textContent = token;
+                    updateStatus('Token generated successfully');
+                    console.log('Token generated successfully');
+                } else {
+                    updateStatus('Failed to generate token', true);
+                    console.error('Failed to generate token');
+                }
+            } catch (error) {
+                updateStatus('Error: ' + error.message, true);
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html> 
